@@ -2,7 +2,7 @@ echo off
 echo Database version on Windows using SVN - Copyright (C) 2013 Christopher Pattle
 echo This program comes with ABSOLUTELY NO WARRANTY;
 echo This is free software, and you are welcome to redistribute it under certain conditions;
-echo Please see the licence.txt file that came with this program
+echo Please see the LICENSE.txt file that came with this program
 pause
 ::Set the root directory and the path to this application
 set rootdir=C:PATH\TO\ROOT
