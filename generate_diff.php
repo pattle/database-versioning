@@ -24,9 +24,12 @@ $revision = $argv[1];
 //Loop through all of the files with the new database structure in them
 foreach (glob('tables/' . $revision . '/*.' . $revision . '.sql') as $filename)
 {
+    $oldSqlFile = $filename;
+    $newSqlFile = str_replace('.' . $revision, '', $filename);
+    
     //Get the contents of the file
-    $aNewSql = file($filename);
-    $aOldSql = file(str_replace('.' . $revision, '', $filename));
+    $aNewSql = file($oldSqlFile);
+    $aOldSql = file($newSqlFile);
     
     //Get the table name
     $tableName = str_replace('tables/' . $revision . '/', '', $filename);
@@ -37,16 +40,22 @@ foreach (glob('tables/' . $revision . '/*.' . $revision . '.sql') as $filename)
     $aOldSql = filterSql($aOldSql);
 
     //Get the difference
-    $aDiff = createDiff($aNewSql, $aOldSql, $aFileParts[1]);
+    list($aUpDiff, $aDownDiff) = createDiff($aNewSql, $aOldSql, $aFileParts[1]);
     
     //Implode the array to get a string of SQL commands
-    $sqlDiff = implode("\n", $aDiff);
+    $sqlUpDiff = implode("\n", $aUpDiff);
+    $sqlDownDiff = implode("\n", $aDownDiff);
 
     //Put the contents back in the file
-    file_put_contents($filename, $sqlDiff);
+    file_put_contents($oldSqlFile, $sqlUpDiff);
+    file_put_contents($newSqlFile, $sqlDownDiff);
+    
+    copy($oldSqlFile, str_replace('tables/' . $revision, 'tables/' . $revision . '/up', $oldSqlFile));
+    copy($newSqlFile, str_replace('tables/' . $revision, 'tables/' . $revision . '/down', $newSqlFile));
     
     //Delete the file containing the old structure
-    unlink(str_replace('.' . $revision, '', $filename));
+    unlink($oldSqlFile);
+    unlink($newSqlFile);
 }
 
 /*
@@ -109,7 +118,8 @@ function filterSql($aSql)
  */
 function createDiff($aNewSql, $aOldSql, $tableName)
 {
-    $aDiff = array();
+    $aUpDiff = array();
+    $aDownDiff = array();
     
     $count = 0;
     
@@ -130,9 +140,11 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                 {
                     //If it does then it means this is a new field
                     //So we need to add the sql to add this field to the array
-                    $prevId = $count - 1;
-                    preg_match("/`(.*)`/", $aNewSql[$prevId], $aMatch);
-                    $aDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aNewSql[$count]) . ' AFTER ' . $aMatch[0] . ';';
+                    preg_match("/`(.*)`/", $aNewSql[($count - 1)], $aPrevMatch);
+                    $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aNewSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
+                    
+                    preg_match("/`(.*)`/", $aNewSql[$count], $aThisMatch);
+                    $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch[0] . ';';
                 }
                 else
                 {
@@ -157,7 +169,11 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                 {
                     //If it doesn't then it means this field has been dropped
                     //So we need to add the sql to drop this field into the array
-                    $aDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . str_replace(',', ';', $aOldSql[$count]);
+                    preg_match("/`(.*)`/", $aOldSql[$count], $aThisMatch);
+                    $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch . ';';
+                    
+                    preg_match("/`(.*)`/", $aOldSql[($count - 1)], $aPrevMatch);
+                    $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aNewSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
                 }
                 else
                 {
@@ -169,6 +185,6 @@ function createDiff($aNewSql, $aOldSql, $tableName)
         }
     }
     
-    return $aDiff;
+    return array($aUpDiff, $aDownDiff);
 }
 ?>
