@@ -2,11 +2,12 @@ echo off
 echo Database version on Windows using SVN - Copyright (C) 2013 Christopher Pattle
 echo This program comes with ABSOLUTELY NO WARRANTY;
 echo This is free software, and you are welcome to redistribute it under certain conditions;
-echo Please see the LICENSE.txt file that came with this program
+echo Please see the licence.txt file that came with this program
 pause
+
 ::Set the root directory and the path to this application
-set rootdir=C:PATH\TO\ROOT
-set apppath=C:\PATH\TO\ROOT\database
+set rootdir=C:\PATH\TO\ROOT
+set apppath=C:\PATH\TO\APPLICATION
 
 ::Change to the root directory and get the svn version number
 cd %rootdir%
@@ -72,8 +73,11 @@ goto skip
 
 :files_differ
 ::Make a directory for this revision number to store the new db structure in
+::We also need to create folder to store the "up" and "down" sql
 IF EXIST tables\%revision% goto nextstep
 mkdir tables\%revision%
+mkdir tables\%revision%\up
+mkdir tables\%revision%\down
 
 :nextstep
 ::Copy the old and new structure to the revision number folder
