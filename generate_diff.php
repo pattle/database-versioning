@@ -162,7 +162,7 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                     //If it doesn't then it means this field has been dropped
                     //So we need to add the sql to drop this field into the array
                     preg_match("/`(.*)`/", $aOldSql[$count], $aThisMatch);
-                    $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch . ';';
+                    $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch[0] . ';';
                     
                     preg_match("/`(.*)`/", $aOldSql[($count - 1)], $aPrevMatch);
                     $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aNewSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
