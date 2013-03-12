@@ -165,7 +165,7 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                     $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch[0] . ';';
                     
                     preg_match("/`(.*)`/", $aOldSql[($count - 1)], $aPrevMatch);
-                    $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aNewSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
+                    $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aOldSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
                 }
                 else
                 {
