@@ -9,6 +9,7 @@ set apppath=C:\PATH\TO\APPLICATION
 
 ::Change to the root directory and get the svn version number
 cd %rootdir%
+svn up
 
 for /f "delims=: tokens=1,2" %%a in ('svn info') do (
   if "%%a"=="Revision" (

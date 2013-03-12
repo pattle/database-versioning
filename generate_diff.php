@@ -116,8 +116,7 @@ function createDiff($aNewSql, $aOldSql, $tableName)
     $count = 0;
     
     //Check to see if the array with the new sql in is bigger than the old sql
-    //This would mean fieds have been added
-    //Otherwise it means fields have been deleted
+    //This would mean fields have been added
     if(count($aNewSql) > count($aOldSql))
     {
         //Loop through the old sql
@@ -127,6 +126,9 @@ function createDiff($aNewSql, $aOldSql, $tableName)
 
             while($match === FALSE)
             {
+                if(!isset($aNewSql[$count]))
+                    break;
+                
                 //Check to see if this line in the old sql matches the one in the new sql
                 if($sqlLine != $aNewSql[$count])
                 {
@@ -134,7 +136,7 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                     //So we need to add the sql to add this field to the array
                     preg_match("/`(.*)`/", $aNewSql[($count - 1)], $aPrevMatch);
                     $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aNewSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
-                    
+
                     preg_match("/`(.*)`/", $aNewSql[$count], $aThisMatch);
                     $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch[0] . ';';
                 }
@@ -142,20 +144,25 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                 {
                     $match = TRUE;
                 }
-                
+
                 $count++;
             }
         }
     }
-    else
+    //Now check to see if the array of new sql is small than the old sql
+    //This indicates that fields have been deleted
+    elseif(count($aNewSql) < count($aOldSql))
     {
         //Loop through the new sql
         foreach($aNewSql as $sqlLine)
-        {            
+        {
             $match = FALSE;
 
             while($match === FALSE)
             {
+                if(!isset($aOldSql[$count]))
+                    break;
+                
                 //Check to see if this line in the new sql matches the one in the old sql
                 if($sqlLine != $aOldSql[$count])
                 {
@@ -163,7 +170,7 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                     //So we need to add the sql to drop this field into the array
                     preg_match("/`(.*)`/", $aOldSql[$count], $aThisMatch);
                     $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' DROP ' . $aThisMatch[0] . ';';
-                    
+
                     preg_match("/`(.*)`/", $aOldSql[($count - 1)], $aPrevMatch);
                     $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' ADD ' . str_replace(',', '', $aOldSql[$count]) . ' AFTER ' . $aPrevMatch[0] . ';';
                 }
@@ -171,9 +178,33 @@ function createDiff($aNewSql, $aOldSql, $tableName)
                 {
                     $match = TRUE;
                 }
-                
+
                 $count++;
             }
+        }
+    }
+    else
+    {
+        //If we haven't fallen into the above conditionals it means the arrays are the same size
+        //This indicates that fields have just been renamed
+        foreach($aOldSql as $sqlLine)
+        {
+            if(!isset($aNewSql[$count]))
+                break;
+
+            //Check to see if this line in the old sql matches the one in the new sql
+            if($sqlLine != $aNewSql[$count])
+            {
+                //If it does then it means this is a new field
+                //So we need to add the sql to add this field to the array
+                preg_match("/`(.*)`/", $sqlLine, $aThisMatch);
+                $aUpDiff[] = 'ALTER TABLE ' . $tableName . ' CHANGE ' . $aThisMatch[0] . ' ' . str_replace(',', '', $aNewSql[$count]) . ';';
+
+                preg_match("/`(.*)`/", $aNewSql[$count], $aThisMatch);
+                $aDownDiff[] = 'ALTER TABLE ' . $tableName . ' CHANGE ' . $aThisMatch[0] . ' ' . str_replace(',', '', $sqlLine) . ';';
+            }
+
+            $count++;
         }
     }
     
